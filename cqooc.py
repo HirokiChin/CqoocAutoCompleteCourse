@@ -148,9 +148,9 @@ class AutoCompleteOnlineCourse:
         # CompleteCourse = self.getCompleteCourse()
         print("已完成小节数: {} ".format(len(self.CompleteCourse)))
         for chapterId, sectionIds in sectionList.items():
-            print(
-                '章节进度: %d/%d(%.2f%%) \t当前：%s' % (
-                    index_t + 1, len(sectionList.items()), ((float((index_t + 1) / len(sectionList.items()))) * 100),self.courseDes[chapterId]))
+            print('章节进度: {}/{}({:.2f} \t当前: {}'.format(index_t + 1, len(sectionList.items()),
+                                                        ((float((index_t + 1) / len(sectionList.items()))) * 100),
+                                                        self.courseDes.get(chapterId)))
             index_t += 1
             for index, sectionId in enumerate(sectionIds):
                 print('\t小节进度: %d/%d(%.2f%%)' % (
