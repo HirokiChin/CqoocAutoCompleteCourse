@@ -4,7 +4,7 @@ import json
 
 ################### Config #############################
 
-cookie_xsid = 'xsid' 
+cookie_xsid = '' 
 
 ########################################################
 
@@ -15,23 +15,23 @@ class AutoCompleteOnlineCourse:
         session = requests.Session()
         session.headers['Cookie'] = 'player=1; xsid=' + cookie_xsid
         session.headers['Connection'] = 'close'
-        session.headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) ' \
-                                        'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-                                        'Chrome/80.0.3987.122 Safari/537.36'
+        session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
         session.headers['Host'] = 'www.cqooc.net'
         self.Session = session
+        self.CompleteCourse = None
+        self.courseId = None
+        self.courseDes = None
 
     def main(self) -> None:
         info = self.getInfomation()
         try:
-            print(info.json()['msg'])
+            print('Login ID:', info['username'])
+        except:
             print("xsid有误，请检查！")
             return
-        except:
-            pass
         self.ownerId = info['id']
         self.username = info['username']
-        print("Login ID:", self.username)
+
 
         courseData = []
         for index, i in enumerate(self.getCourseInfo()['data']):
@@ -52,7 +52,18 @@ class AutoCompleteOnlineCourse:
         self.parentId = courseData[int(id) - 1]['parentId']
         self.courseId = courseData[int(id) - 1]['courseId']
         print("\n已选择 {}\n".format(self.title))
+        self.CompleteCourse = self.getCompleteCourse()
+        self.getCourseDes()
         self.startLearnCourse()
+
+    def getCourseDes(self):
+        # 课程章节名
+        self.Session.headers['Referer'] = f'http://www.cqooc.net/my/learn/mooc/structure?id={self.courseId}'
+        courseDes = {}
+        res = self.Session.get(f'http://www.cqooc.com/json/chapters?limit=200&start=1&sortby=selfId&status=1&courseId={self.courseId}&select=id,title,level,selfId,parentId&ts={int(round(time.time() * 1000))}')
+        for i in res.json()['data']:
+            courseDes[i['id']] = i['title']
+        self.courseDes = courseDes
 
     def getInfomation(self) -> json:
         """
@@ -77,10 +88,8 @@ class AutoCompleteOnlineCourse:
         :return:
         """
         self.Session.headers['Referer'] = 'http://www.cqooc.net/learn/mooc/progress?id=' + self.courseId
-
         data = self.Session.get(
-            'http://www.cqooc.net/json/learnLogs?limit=100&start=1&sortby=id&courseId={}&select=sectionId&username={}'.format(
-                self.courseId, self.username))
+            f'http://www.cqooc.com/json/learnLogs?limit=100&start=1&courseId={self.courseId}&select=sectionId&username={self.username}&ts={int(round(time.time() * 1000))}')
         CourseIdList = []
         for i in data.json()['data']:
             CourseIdList.append(i['sectionId'])
@@ -131,25 +140,25 @@ class AutoCompleteOnlineCourse:
                 count += 1
                 continue
 
-    def startLearnCourse(self) -> None:
+    def startLearnCourse(self):
 
         sectionList = \
             self.Session.get('http://www.cqooc.net/json/chapter/lessons?courseId=' + self.courseId).json()['data'][0]['body']
         index_t = 0
-        CompleteCourse = self.getCompleteCourse()
-        print("已完成小节数: {} ".format(len(CompleteCourse)))
+        # CompleteCourse = self.getCompleteCourse()
+        print("已完成小节数: {} ".format(len(self.CompleteCourse)))
         for chapterId, sectionIds in sectionList.items():
             print(
-                '章节剩余: %d/%d(%.2f%%)' % (
-                    index_t + 1, len(sectionList.items()), ((float((index_t + 1) / len(sectionList.items()))) * 100)))
+                '章节进度: %d/%d(%.2f%%) \t当前：%s' % (
+                    index_t + 1, len(sectionList.items()), ((float((index_t + 1) / len(sectionList.items()))) * 100),self.courseDes[chapterId]))
             index_t += 1
             for index, sectionId in enumerate(sectionIds):
-                print('    小节剩余: %d/%d(%.2f%%)' % (
+                print('\t小节进度: %d/%d(%.2f%%)' % (
                     index + 1, len(sectionIds), (float((index + 1) / len(sectionIds)) * 100)), end='')
-                if sectionId in CompleteCourse:
-                    print(' 已完成，跳过!')
+                if sectionId in self.CompleteCourse:
+                    print('\t已完成，跳过!')
                     continue
-                print(' 成功!')
+                print('\t成功!')
                 self.checkProgress(self.courseId, sectionId, chapterId)
 
 
