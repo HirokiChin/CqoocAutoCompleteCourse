@@ -39,7 +39,7 @@
   + 提交后可能无分数，待测
   + ![image](https://tva1.sinaimg.cn/large/0081Kckwly1gl8pcrlqlgj30al033t8t.jpg)
 + 拷贝答案作答
-  + 拷贝别人已作答题目的答案，来提交自己的（需提交已作答账户的cookie）
+  + 拷贝别人已作答题目的答案，来提交自己的（需输入已作答账户的cookie）
 
 ## 声明
 
