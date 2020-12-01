@@ -30,7 +30,7 @@
 + 保存，运行
 
 #### 运行图
-![image](https://tva1.sinaimg.cn/large/0081Kckwly1gl8ov0kkgxj30nx0midjz.jpg)
+![image](https://raw.githubusercontent.com/HirokiChin/CqoocAutoCompleteCourse/master/img/png1.png)
 
 ### 自动答题说明
 
