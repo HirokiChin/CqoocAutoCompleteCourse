@@ -41,14 +41,12 @@ class AutoCompletPapers():
         if submitEnd > time.time() * 1000:
             return -1
         body = response.json()['body']
-
         answers = {}
         try:
             for i in body:
                 if i['questions'] != []:
                     for question in i['questions']:
                         answer = question['body']['answer']
-
                         if len(answer) == 1:
                             answer = answer[0]
                         answers["q" + question['id']] = answer
@@ -85,11 +83,9 @@ class AutoCompletPapers():
         answers = {}
         try:
             for i in body:
-                print(i)
                 if i['questions'] != []:
                     for question in i['questions']:
                         answer = data.json()['data'][0]['body'][0]['q' + question['id']]
-                        print(answer)
                         if len(answer) == 1:
                             answer = answer[0]
                         answers["q" + question['id']] = answer
