@@ -23,18 +23,33 @@ class AutoCompletPapers():
         self.Session = session
         self.courseId = courseId
         self.cookieXsidUser = None
+
         try:
-            self.name = self.Session.get(f'http://www.cqooc.com/account/session/api/profile/get?ts={getTs()}').json().get(
+            self.name = self.get(f'http://www.cqooc.com/account/session/api/profile/get?ts={getTs()}').json().get(
                 'name')
         except:
             self.name = input("名字获取失败！请输入你的名字（真实名字）: ")
+
+    def get(self, url, headers=None):
+        # 防止请求异常抛出，异常自动重新请求
+        while True:
+            try:
+                return self.Session.get(url, headers=headers)
+            except:
+                continue
+
+    def post(self, url, json=None, headers=None, data=None):
+        while True:
+            try:
+                return self.Session.post(url, json=json, headers=headers, data=data)
+            except:
+                continue
 
     def getAnswers(self, paperId):
         # 获取答案
         req_url = f'http://www.cqooc.com/test/api/paper/get?id={paperId}&ts={getTs()}'
         # TODO 替换Referer中的id值
-        response = requests.get(req_url, headers={
-            'Cookie': 'xsid={}; player=1'.format(cookie_xsid),
+        response = self.get(req_url, headers={
             'Referer': 'http://www.cqooc.com/learn/mooc/testing/do?tid=42663&id=334566831&sid=360456&cid=149658&mid=12158213',
         })
         submitEnd = response.json()['submitEnd']
@@ -61,7 +76,7 @@ class AutoCompletPapers():
         session = requests.session()
         session.headers[
             'User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36'
-        session.headers['Connection'] = 'keep-alive'
+        session.headers['Connection'] = 'close'
         session.headers['cookie'] = 'xsid={}; player=1'.format(self.cookieXsidUser)
 
 
@@ -99,9 +114,9 @@ class AutoCompletPapers():
         :param mode: due 已过期题目获取答案提交  非due  从另一个用户获取答案提交
         :return:
         """
-        info = self.Session.get('http://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
+        info = self.get('http://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
 
-        papersList = self.Session.get(
+        papersList = self.get(
             f'http://www.cqooc.com/json/exam/papers?limit=20&start=1&courseId={self.courseId}&select=id,title&ts={getTs()}')
 
         papersInfo = {}
@@ -125,7 +140,7 @@ class AutoCompletPapers():
                 return
 
             # 检查是否已经作答
-            isAnswer = self.Session.get(f'http://www.cqooc.com/json/test/result/search?testID={id}&ts={getTs()}', headers={
+            isAnswer = self.get(f'http://www.cqooc.com/json/test/result/search?testID={id}&ts={getTs()}', headers={
                 'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=488839&cid=197038&mid=335078130'
             }).json()
 
@@ -134,7 +149,7 @@ class AutoCompletPapers():
                 time.sleep(1)
                 continue
 
-            response = self.Session.post('http://www.cqooc.com/test/api/result/add', headers={
+            response = self.post('http://www.cqooc.com/test/api/result/add', headers={
                 'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=307978&cid=131676&mid=12184817',
             }, data=json.dumps({
                 "ownerId": info.get('id'),
@@ -153,8 +168,6 @@ class AutoCompletPapers():
 
             time.sleep(1)
 
-
-
 class AutoCompleteOnlineCourse:
     def __init__(self) -> None:
 
@@ -164,13 +177,29 @@ class AutoCompleteOnlineCourse:
         # headers
         session = requests.Session()
         session.headers['Cookie'] = 'player=1; xsid=' + cookie_xsid
-        session.headers['Connection'] = 'close'
+        # session.headers['Connection'] = 'close'
         session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
         session.headers['Host'] = 'www.cqooc.com'
+        session.keep_alive = False
         self.Session = session
         self.CompleteCourse = None
         self.courseId = None
         self.courseDes = None
+
+
+    def get(self, url, headers=None):
+        while True:
+            try:
+                return self.Session.get(url, headers=headers)
+            except:
+                continue
+
+    def post(self, url, json=None, headers=None):
+        while True:
+            try:
+                return self.Session.post(url, json=json, headers=headers)
+            except:
+                continue
 
     def main(self) -> None:
         info = self.getInfomation()
@@ -222,7 +251,7 @@ class AutoCompleteOnlineCourse:
         # 课程章节名
         self.Session.headers['Referer'] = f'http://www.cqooc.com/my/learn/mooc/structure?id={self.courseId}'
         courseDes = {}
-        res = self.Session.get(f'http://www.cqooc.com/json/chapters?limit=200&start=1&sortby=selfId&status=1&courseId={self.courseId}&select=id,title,level,selfId,parentId&ts={getTs()}')
+        res = self.get(f'http://www.cqooc.com/json/chapters?limit=200&start=1&sortby=selfId&status=1&courseId={self.courseId}&select=id,title,level,selfId,parentId&ts={getTs()}')
         for i in res.json()['data']:
             courseDes[i['id']] = i['title']
         self.courseDes = courseDes
@@ -232,7 +261,7 @@ class AutoCompleteOnlineCourse:
         获取基本信息
         :return:
         """
-        return self.Session.get('http://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
+        return self.get('http://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
 
     def getCourseInfo(self) -> json:
         """
@@ -240,7 +269,7 @@ class AutoCompleteOnlineCourse:
         :return:
         """
         self.Session.headers['Referer'] = 'http://www.cqooc.com/my/learn'
-        return self.Session.get(
+        return self.get(
             'http://www.cqooc.com/json/mcs?sortby=id&reverse=true&del=2&courseType=2&ownerId={}&limit=10'.format(
                 self.ownerId)).json()
 
@@ -250,7 +279,7 @@ class AutoCompleteOnlineCourse:
         :return:
         """
         self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/progress?id=' + self.courseId
-        data = self.Session.get(
+        data = self.get(
             f'http://www.cqooc.com/json/learnLogs?limit=100&start=1&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}')
         CourseIdList = []
         for i in data.json()['data']:
@@ -259,13 +288,13 @@ class AutoCompleteOnlineCourse:
 
     def startLearn(self) -> json:
         self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/structure?id=' + self.courseId
-        return self.Session.post(url='http://www.cqooc.com/account/session/api/login/time', json={
+        return self.post(url='http://www.cqooc.com/account/session/api/login/time', json={
             "username": self.username
         }).json()
 
     def getLog(self, sectionId) -> json:
         self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/structure?id=' + self.courseId
-        return self.Session.get(
+        return self.get(
             'http://www.cqooc.com/json/learnLogs?sectionId=' + sectionId + '&username=' + self.username).json()
 
     def checkProgress(self, courseId, sectionId, chapterId) -> None:
@@ -279,7 +308,7 @@ class AutoCompleteOnlineCourse:
             self.startLearn()
             time.sleep(1)
 
-            Log = self.Session.post('http://www.cqooc.com/learnLog/api/add', json={
+            Log = self.post('http://www.cqooc.com/learnLog/api/add', json={
                 "action": 0,
                 "category": 2,
                 "chapterId": str(chapterId),
@@ -305,12 +334,12 @@ class AutoCompleteOnlineCourse:
     def startLearnCourse(self):
 
         sectionList = \
-            self.Session.get('http://www.cqooc.com/json/chapter/lessons?courseId=' + self.courseId).json()['data'][0]['body']
+            self.get('http://www.cqooc.com/json/chapter/lessons?courseId=' + self.courseId).json()['data'][0]['body']
         index_t = 0
         # CompleteCourse = self.getCompleteCourse()
         print("已完成小节数: {} ".format(len(self.CompleteCourse)))
         for chapterId, sectionIds in sectionList.items():
-            print('章节进度: {}/{}({:.2f} \t当前: {}'.format(index_t + 1, len(sectionList.items()),
+            print('章节进度: {}/{}({:.2f}%) \t当前: {}'.format(index_t + 1, len(sectionList.items()),
                                                         ((float((index_t + 1) / len(sectionList.items()))) * 100),
                                                         self.courseDes.get(chapterId)))
             index_t += 1
