@@ -316,7 +316,7 @@ class AutoCompleteOnlineCourse:
 
             self.startLearn()
             self.getLog(sectionId)
-            self.sleep_print(20)
+            self.sleep_print(35)
             self.startLearn()
             time.sleep(1)
 
@@ -369,5 +369,3 @@ class AutoCompleteOnlineCourse:
 
 if __name__ == '__main__':
     AutoCompleteOnlineCourse().main()
-
-
