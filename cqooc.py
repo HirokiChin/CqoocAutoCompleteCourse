@@ -5,6 +5,9 @@ import time
 import json
 
 ################### Config #############################
+# Windows推荐直接双击脚本运行，或使用CMD/PowerShell运行
+# 不推荐使用Python IDLE运行（执行输出会乱码）
+# 如果使用CMD/PowerShell运行过程中，"卡"住，请多敲几下回车即可
 
 cookie_xsid = ''
 
@@ -36,6 +39,7 @@ class AutoCompletPapers():
             try:
                 return self.Session.get(url, headers=headers)
             except:
+                print("请求异常，重试中...")
                 continue
 
     def post(self, url, json=None, headers=None, data=None):
@@ -43,6 +47,7 @@ class AutoCompletPapers():
             try:
                 return self.Session.post(url, json=json, headers=headers, data=data)
             except:
+                print("请求异常，重试中...")
                 continue
 
     def getAnswers(self, paperId):
@@ -186,12 +191,18 @@ class AutoCompleteOnlineCourse:
         self.courseId = None
         self.courseDes = None
 
+    @staticmethod
+    def sleep_print(sec):
+        for i in range(sec):
+            print(f"\r等待 {sec-i} 秒后继续", end='')
+            time.sleep(1)
 
     def get(self, url, headers=None):
         while True:
             try:
                 return self.Session.get(url, headers=headers)
             except:
+                print("\r请求异常，重试中...")
                 continue
 
     def post(self, url, json=None, headers=None):
@@ -199,6 +210,7 @@ class AutoCompleteOnlineCourse:
             try:
                 return self.Session.post(url, json=json, headers=headers)
             except:
+                print("\r请求异常，重试中...")
                 continue
 
     def main(self) -> None:
@@ -304,7 +316,7 @@ class AutoCompleteOnlineCourse:
 
             self.startLearn()
             self.getLog(sectionId)
-            time.sleep(20)
+            self.sleep_print(20)
             self.startLearn()
             time.sleep(1)
 
@@ -324,11 +336,14 @@ class AutoCompleteOnlineCourse:
             else:
                 date = 150
 
-            if Log.json()['msg'] == '已经添加记录' or Log.json()['msg'] == 'No error':
-                return
-            else:
-                time.sleep(date)
-                count += 1
+            try:
+                if Log.json()['msg'] == '已经添加记录' or Log.json()['msg'] == 'No error':
+                    return
+                else:
+                    self.sleep_print(date)
+                    count += 1
+                    continue
+            except:
                 continue
 
     def startLearnCourse(self):
@@ -339,12 +354,12 @@ class AutoCompleteOnlineCourse:
         # CompleteCourse = self.getCompleteCourse()
         print("已完成小节数: {} ".format(len(self.CompleteCourse)))
         for chapterId, sectionIds in sectionList.items():
-            print('章节进度: {}/{}({:.2f}%) \t当前: {}'.format(index_t + 1, len(sectionList.items()),
+            print('\r章节进度: {}/{}({:.2f}%) \t当前: {}'.format(index_t + 1, len(sectionList.items()),
                                                         ((float((index_t + 1) / len(sectionList.items()))) * 100),
                                                         self.courseDes.get(chapterId)))
             index_t += 1
             for index, sectionId in enumerate(sectionIds):
-                print('\t小节进度: %d/%d(%.2f%%)' % (
+                print('\r\t小节进度: %d/%d(%.2f%%)' % (
                     index + 1, len(sectionIds), (float((index + 1) / len(sectionIds)) * 100)), end='')
                 if sectionId in self.CompleteCourse:
                     print('\t已完成，跳过!')
@@ -352,7 +367,7 @@ class AutoCompleteOnlineCourse:
                 print('\t成功!')
                 self.checkProgress(self.courseId, sectionId, chapterId)
 
-
 if __name__ == '__main__':
     AutoCompleteOnlineCourse().main()
+
 
