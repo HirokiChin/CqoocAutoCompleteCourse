@@ -490,7 +490,9 @@ class AutoCompleteOnlineCourse:
         """
         self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/progress?id=' + self.courseId
         data = self.get(
-            f'http://www.cqooc.com/json/learnLogs?limit=200&start=1&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}')
+            f'http://www.cqooc.com/json/learnLogs?limit=150&start=1&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}', headers={
+                "referer": f'http://www.cqooc.net/learn/mooc/structure?id={self.courseId}'
+            })
         CourseIdList = []
         for i in data.json()['data']:
             CourseIdList.append(i['sectionId'])
@@ -553,7 +555,6 @@ class AutoCompleteOnlineCourse:
         print("已完成小节数: {} ".format(len(self.CompleteCourse)))
 
         for chapterId, sectionIds in sectionList.items():
-            print(chapterId, sectionIds)
             print('\r章节进度: {}/{}({:.2f}%) \t当前: {}'.format(index_t + 1, len(sectionList.items()),
                                                         ((float((index_t + 1) / len(sectionList.items()))) * 100),
                                                         self.courseDes.get(chapterId)))
