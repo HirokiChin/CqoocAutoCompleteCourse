@@ -271,7 +271,7 @@ class AutoCompletPapers():
         })
 
         if response.json().get('code') == 401:
-            print("xsid有误，请检查！")
+            input("xsid有误，请检查！")
             return -2
         body = response.json()['body']
         answers = {}
@@ -358,7 +358,7 @@ class AutoCompleteOnlineCourse:
     def __init__(self) -> None:
 
         if cookie_xsid == '':
-            print("请添加xsid")
+            input("请添加xsid")
             exit(0)
         # HEADERS
         session = requests.Session()
@@ -399,7 +399,7 @@ class AutoCompleteOnlineCourse:
         try:
             print('Login ID:', info['username'])
         except:
-            print("xsid有误，请检查！")
+            input("xsid有误，请检查！")
             return
         self.ownerId = info['id']
         self.username = info['username']
@@ -488,15 +488,33 @@ class AutoCompleteOnlineCourse:
         获取已完成小节列表
         :return:
         """
-        self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/progress?id=' + self.courseId
-        data = self.get(
-            f'http://www.cqooc.com/json/learnLogs?limit=150&start=1&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}', headers={
-                "referer": f'http://www.cqooc.net/learn/mooc/structure?id={self.courseId}'
-            })
+        # 防止死循环，最大能获取到的课程小节数为750（150*5），若实际课程小节数大于750，请将此值改大！
+        maximumCycles = 5
+        limit, start = 150, 1
         CourseIdList = []
-        for i in data.json()['data']:
-            CourseIdList.append(i['sectionId'])
-        return CourseIdList
+
+        while True:
+            maximumCycles -= 1
+
+            self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/progress?id=' + self.courseId
+            data = self.get(
+                f'http://www.cqooc.com/json/learnLogs?limit={limit}&start={start}&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}', headers={
+                    "referer": f'http://www.cqooc.net/learn/mooc/structure?id={self.courseId}'
+                })
+
+            learnLogs = data.json()['meta']
+
+            for i in data.json()['data']:
+                CourseIdList.append(i['sectionId'])
+
+            # 课程未获取完全
+            if len(CourseIdList) < int(learnLogs['total']):
+                start += limit
+            else:
+                return CourseIdList
+            if not maximumCycles:
+                print("超出最大循环次数，若已完成小节未获取完全，请将 492 行值改大！")
+                return CourseIdList
 
     def startLearn(self) -> json:
         self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/structure?id=' + self.courseId
