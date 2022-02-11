@@ -11,6 +11,8 @@ import re
 # Windows推荐直接双击脚本运行，或使用CMD/PowerShell运行
 # 不推荐使用Python IDLE运行（执行输出会乱码）
 # 如果使用CMD/PowerShell运行过程中，"卡"住，请多敲几下回车即可
+from hash import SHA256
+
 
 cookie_xsid = ''
 
@@ -287,7 +289,6 @@ class AutoCompletPapers():
         except:
             return None
 
-
     def sendAnswers(self, mode=None):
         """
         :param mode: due 已过期题目获取答案提交  非due  从另一个用户获取答案提交
@@ -355,19 +356,22 @@ class AutoCompletPapers():
             time.sleep(1)
 
 class AutoCompleteOnlineCourse:
-    def __init__(self) -> None:
+    def __init__(self,username, password) -> None:
 
-        if cookie_xsid == '':
-            input("请添加xsid")
-            exit(0)
+        # if cookie_xsid == '':
+        #     input("请添加xsid")
+        #     exit(0)
         # HEADERS
         session = requests.Session()
         session.headers['Cookie'] = 'player=1; xsid=' + cookie_xsid
         # session.headers['Connection'] = 'close'
-        session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
+        session.headers[
+            'User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
         session.headers['Host'] = 'www.cqooc.com'
         session.keep_alive = False
         self.Session = session
+        cookie_xsid = self.toLogin(username, password)
+        session.headers['Cookie'] = 'player=1; xsid=' + cookie_xsid
         self.CompleteCourse = None
         self.courseId = None
         self.courseDes = None
@@ -466,6 +470,14 @@ class AutoCompleteOnlineCourse:
             courseDes[i['id']] = i['title']
         self.courseDes = courseDes
 
+    def toLogin(self, username, password) -> str:
+        nonce = self.get("http://www.cqooc.com/user/login?ts=" + str(getTs())).json()['nonce']
+        cnonce = SHA256(str(getTs()))[:16]
+        pw = SHA256(nonce + SHA256(password) + cnonce)
+        captchaToken = self.post('http://www.cqooc.com/captcha/c', json={'key':'pArxazn4','captcha':'r62p43'}).json()['captchaToken']
+        loginUrl = 'http://www.cqooc.com/user/login?username=' + username + '&password=' + pw + '&nonce=' + nonce + '&cnonce=' + cnonce + '&captchaToken' + captchaToken
+        return self.Session.post(loginUrl).json()['xsid']
+
     def getInfomation(self) -> json:
         """
         获取基本信息
@@ -498,7 +510,8 @@ class AutoCompleteOnlineCourse:
 
             self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/progress?id=' + self.courseId
             data = self.get(
-                f'http://www.cqooc.com/json/learnLogs?limit={limit}&start={start}&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}', headers={
+                f'http://www.cqooc.com/json/learnLogs?limit={limit}&start={start}&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}',
+                headers={
                     "referer": f'http://www.cqooc.net/learn/mooc/structure?id={self.courseId}'
                 })
 
@@ -586,7 +599,7 @@ class AutoCompleteOnlineCourse:
                 print('\t成功!')
                 self.checkProgress(self.courseId, sectionId, chapterId)
 
+
+# 在下方输入账号密码登录
 if __name__ == '__main__':
-    AutoCompleteOnlineCourse().main()
-
-
+    AutoCompleteOnlineCourse('126091903011444', 'z3176400514.').main()
