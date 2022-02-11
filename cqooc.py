@@ -363,7 +363,6 @@ class AutoCompleteOnlineCourse:
         #     exit(0)
         # HEADERS
         session = requests.Session()
-        session.headers['Cookie'] = 'player=1; xsid=' + cookie_xsid
         # session.headers['Connection'] = 'close'
         session.headers[
             'User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
@@ -602,4 +601,4 @@ class AutoCompleteOnlineCourse:
 
 # 在下方输入账号密码登录
 if __name__ == '__main__':
-    AutoCompleteOnlineCourse('126091903011444', 'z3176400514.').main()
+    AutoCompleteOnlineCourse('', '').main()
