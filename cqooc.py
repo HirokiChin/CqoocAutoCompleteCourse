@@ -74,7 +74,7 @@ class AutoCompletPapers():
 
     def getIds(self, paperId):
         # Referer
-        response = self.get(f'http://www.cqooc.net/test/api/paper/info?id={paperId}&ts={getTs()}')
+        response = self.get(f'http://www.cqooc.com/test/api/paper/info?id={paperId}&ts={getTs()}')
         data = response.json()
 
         return {"cid":  data.get('parentId'),
@@ -294,9 +294,9 @@ class AutoCompletPapers():
         :return:
         """
         info = self.get('http://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
-        self.mid = self.get(f'http://www.cqooc.net/json/mcs?ownerId={info["id"]}&courseId={self.courseId}&ts={getTs()}',
+        self.mid = self.get(f'http://www.cqooc.com/json/mcs?ownerId={info["id"]}&courseId={self.courseId}&ts={getTs()}',
                        headers={
-                           "Referer": f'http://www.cqooc.net/learn/mooc/structure?id={self.courseId}'
+                           "Referer": f'http://www.cqooc.com/learn/mooc/structure?id={self.courseId}'
                        }).json()['data'][0]['id']
 
         papersList = self.get(
@@ -499,7 +499,7 @@ class AutoCompleteOnlineCourse:
             self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/progress?id=' + self.courseId
             data = self.get(
                 f'http://www.cqooc.com/json/learnLogs?limit={limit}&start={start}&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}', headers={
-                    "referer": f'http://www.cqooc.net/learn/mooc/structure?id={self.courseId}'
+                    "referer": f'http://www.cqooc.com/learn/mooc/structure?id={self.courseId}'
                 })
 
             learnLogs = data.json()['meta']
