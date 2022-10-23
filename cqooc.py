@@ -12,7 +12,7 @@ import re
 # 不推荐使用Python IDLE运行（执行输出会乱码）
 # 如果使用CMD/PowerShell运行过程中，"卡"住，请多敲几下回车即可
 
-cookie_xsid = ''
+cookie_xsid = '7BBC9F8A650B55A3'
 
 ########################################################
 
@@ -222,7 +222,10 @@ class AutoCompletPapers():
         # 获取答案
         req_url = f'http://www.cqooc.com/test/api/paper/get?id={paperId}&ts={getTs()}'
 
-        ids = self.getIds(paperId)
+        try:
+            ids = self.getIds(paperId)
+        except TypeError:
+            return None
 
         response = self.get(req_url, headers={
             'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={paperId}&id={self.courseId}'
