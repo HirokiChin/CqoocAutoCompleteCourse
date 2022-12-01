@@ -6,7 +6,6 @@ import time
 import json
 import re
 
-
 ################### Config #############################
 # Windows推荐直接双击脚本运行，或使用CMD/PowerShell运行
 # 不推荐使用Python IDLE运行（执行输出会乱码）
@@ -14,10 +13,13 @@ import re
 
 cookie_xsid = ''
 
+
 ########################################################
+
 
 def getTs():
     return int(time.time() * 1000)
+
 
 class AutoCompletPapers():
     def __init__(self, session, courseId, title):
@@ -26,6 +28,7 @@ class AutoCompletPapers():
         自动完成小节习题（仅支持已过提交日期的习题）
         :return:
         """
+        self.mid = None
         self.Session = session
         self.courseId = courseId
         self.cookieXsidUser = None
@@ -46,11 +49,10 @@ class AutoCompletPapers():
             "2": 'B',
         }
         self.sectionList = \
-            self.get('http://www.cqooc.com/json/chapter/lessons?courseId=' + self.courseId).json()['data'][0]['body']
-
+            self.get('https://www.cqooc.com/json/chapter/lessons?courseId=' + self.courseId).json()['data'][0]['body']
 
         try:
-            self.name = self.get(f'http://www.cqooc.com/account/session/api/profile/get?ts={getTs()}').json().get(
+            self.name = self.get(f'https://www.cqooc.com/account/session/api/profile/get?ts={getTs()}').json().get(
                 'name')
         except:
             self.name = input("名字获取失败！请输入你的名字（真实名字）: ")
@@ -74,22 +76,22 @@ class AutoCompletPapers():
 
     def getIds(self, paperId):
         # Referer
-        response = self.get(f'http://www.cqooc.com/test/api/paper/info?id={paperId}&ts={getTs()}')
+        response = self.get(f'https://www.cqooc.com/test/api/paper/info?id={paperId}&ts={getTs()}')
         data = response.json()
 
-        return {"cid":  data.get('parentId'),
+        return {"cid": data.get('parentId'),
                 "sid": self.sectionList.get(data.get('parentId'))[0]
-            }
+                }
 
     def saveAnswersFromDue(self, papersIds):
         file = open(f'{self.title}.txt', 'w+')
         print(f"开始导出，共 {len(papersIds)} 次测试")
         for id_index, id in enumerate(papersIds):
 
-            req_url = 'http://www.cqooc.com/test/api/paper/get?id=' + str(id) + '&ts=1581869807566'
+            req_url = 'https://www.cqooc.com/test/api/paper/get?id=' + str(id) + '&ts=1581869807566'
 
             response = self.get(req_url, headers={
-                'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=381090&cid=158386&mid=12166414',
+                'Referer': f'https://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=381090&cid=158386&mid=12166414',
             })
             submitEnd = response.json()['submitEnd']
             if submitEnd > time.time() * 1000:
@@ -100,7 +102,7 @@ class AutoCompletPapers():
                 continue
 
             body = response.json()['body']
-            if body == None: continue
+            if body is None: continue
 
             for i in body:
                 if i['questions'] != []:
@@ -140,7 +142,7 @@ class AutoCompletPapers():
                                 file.write(self.answerTable[x] + ' ')
                         file.write('\n\n')
             # 请求过快会503
-            print(f"[{id_index+1}/{len(papersIds)}] {papersIds.get(id)}")
+            print(f"[{id_index + 1}/{len(papersIds)}] {papersIds.get(id)}")
             time.sleep(1)
         print("写入完成！", os.path.abspath(f'{self.title}.txt'))
 
@@ -150,23 +152,25 @@ class AutoCompletPapers():
         file = open(f'{self.title}.txt', 'w+')
         print(f"开始导出，共 {len(papersIds)} 次测试")
         for id_index, id in enumerate(papersIds):
-            data = self.get(f'http://www.cqooc.com/json/test/result/search?testID={id}', headers={
-                'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=360456&cid=149658&mid=12158213',
+            data = self.get(f'https://www.cqooc.com/json/test/result/search?testID={id}', headers={
+                'Referer': f'https://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}'
+                           f'&sid=360456&cid=149658&mid=12158213',
             })
 
             time.sleep(0.5)
 
-            req_url = f'http://www.cqooc.com/test/api/paper/get?id={id}'
+            req_url = f'https://www.cqooc.com/test/api/paper/get?id={id}'
 
             response = self.get(req_url, headers={
-                'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=360456&cid=149658&mid=12158213',
+                'Referer': f'https://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}'
+                           f'&sid=360456&cid=149658&mid=12158213',
             })
 
             body = response.json()['body']
-            if body == None: continue
+            if body is None: continue
 
             for i in body:
-                if i['questions'] != []:
+                if i['questions']:
                     if i['desc'] == '判断题':
                         questions_type = "[判断题] "
                     elif i['desc'] == '多选题':
@@ -188,7 +192,7 @@ class AutoCompletPapers():
                             question_plus = question['question'].replace('\n', '').replace('\r', '')
                             file.write(questions_type + question_plus.lstrip() + '\n')
 
-                        if data.json()['data'] == []:
+                        if not data.json()['data']:
                             answers = '-1'
                         else:
                             answers = data.json()['data'][0]['body'][0]['q' + question['id']]
@@ -213,14 +217,14 @@ class AutoCompletPapers():
                             # 写入答案，多选题需遍历
                             file.write(tempAnswer + ' ')
                         file.write('\n\n')
-            print(f"[{id_index+1}/{len(papersIds)}] {papersIds.get(id)}")
+            print(f"[{id_index + 1}/{len(papersIds)}] {papersIds.get(id)}")
             time.sleep(1)
             file.write('\n\n')
         print("写入完成！", os.path.abspath(f'{self.title}.txt'))
 
     def getAnswers(self, paperId):
         # 获取答案
-        req_url = f'http://www.cqooc.com/test/api/paper/get?id={paperId}&ts={getTs()}'
+        req_url = f'https://www.cqooc.com/test/api/paper/get?id={paperId}&ts={getTs()}'
 
         try:
             ids = self.getIds(paperId)
@@ -228,7 +232,7 @@ class AutoCompletPapers():
             return None
 
         response = self.get(req_url, headers={
-            'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={paperId}&id={self.courseId}'
+            'Referer': f'https://www.cqooc.com/learn/mooc/testing/do?tid={paperId}&id={self.courseId}'
                        f'&sid={ids.get("sid")}&cid={ids.get("cid")}&mid={self.mid}',
         })
 
@@ -251,26 +255,27 @@ class AutoCompletPapers():
 
     def getAnswersFromUser(self, paperId):
         # 获取答案（从另一个用户）
-        self.cookieXsidUser = input("请输入已作答用户的cookie(xsid): ") if self.cookieXsidUser == None else self.cookieXsidUser
+        self.cookieXsidUser = input(
+            "请输入已作答用户的cookie(xsid): ") if self.cookieXsidUser is None else self.cookieXsidUser
 
         # ids = self.getIds(paperId)
 
         session = requests.session()
         session.headers[
-            'User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36'
+            'User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_3) ' \
+                            'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.122 Safari/537.36'
         session.headers['Connection'] = 'close'
         session.headers['cookie'] = 'xsid={}; player=1'.format(self.cookieXsidUser)
 
-
-        data = session.get('http://www.cqooc.com/json/test/result/search?testID=' + str(paperId), headers={
-            'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={paperId}&id={self.courseId}&sid=360456&cid=149658&mid={self.mid}',
+        data = session.get('https://www.cqooc.com/json/test/result/search?testID=' + str(paperId), headers={
+            'Referer': f'https://www.cqooc.com/learn/mooc/testing/do?tid={paperId}&id={self.courseId}&sid=360456&cid=149658&mid={self.mid}',
         })
 
         time.sleep(0.5)
 
-        req_url = 'http://www.cqooc.com/test/api/paper/get?id=' + str(paperId)
+        req_url = 'https://www.cqooc.com/test/api/paper/get?id=' + str(paperId)
         response = session.get(req_url, headers={
-            'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?do?tid={paperId}&id={self.courseId}&sid=360456&cid=149658&mid=12158213',
+            'Referer': f'https://www.cqooc.com/learn/mooc/testing/do?do?tid={paperId}&id={self.courseId}&sid=360456&cid=149658&mid=12158213',
         })
 
         if response.json().get('code') == 401:
@@ -290,20 +295,20 @@ class AutoCompletPapers():
         except:
             return None
 
-
     def sendAnswers(self, mode=None):
         """
         :param mode: due 已过期题目获取答案提交  非due  从另一个用户获取答案提交
         :return:
         """
-        info = self.get('http://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
-        self.mid = self.get(f'http://www.cqooc.com/json/mcs?ownerId={info["id"]}&courseId={self.courseId}&ts={getTs()}',
-                       headers={
-                           "Referer": f'http://www.cqooc.com/learn/mooc/structure?id={self.courseId}'
-                       }).json()['data'][0]['id']
+        info = self.get('https://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
+        self.mid = \
+            self.get(f'https://www.cqooc.com/json/mcs?ownerId={info["id"]}&courseId={self.courseId}&ts={getTs()}',
+                     headers={
+                         "Referer": f'https://www.cqooc.com/learn/mooc/structure?id={self.courseId}'
+                     }).json()['data'][0]['id']
 
         papersList = self.get(
-            f'http://www.cqooc.com/json/exam/papers?limit=200&start=1&courseId={self.courseId}&select=id,title&ts={getTs()}')
+            f'https://www.cqooc.com/json/exam/papers?limit=200&start=1&courseId={self.courseId}&select=id,title&ts={getTs()}')
 
         papersInfo = {}
         for i in papersList.json()['data']:
@@ -318,26 +323,27 @@ class AutoCompletPapers():
                 print("{}/{} [{}] 未过提交日期，跳过！".format(len(papersInfo), index + 1, papersInfo[id]))
                 time.sleep(1)
                 continue
-            elif answers == None:
-                print(f"[{index+1}/{len(papersInfo)}] {'无测试题目，跳过！' if mode == 'due' else '未获取到答案，跳过！'} {papersInfo[id]} ")
+            elif answers is None:
+                print(
+                    f"[{index + 1}/{len(papersInfo)}] {'无测试题目，跳过！' if mode == 'due' else '未获取到答案，跳过！'} {papersInfo[id]} ")
                 time.sleep(1)
                 continue
             elif answers == -2:
                 return
 
             # 检查是否已经作答
-            isAnswer = self.get(f'http://www.cqooc.com/json/test/result/search?testID={id}&ts={getTs()}', headers={
-                'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=488839&cid=197038&mid={self.mid}'
+            isAnswer = self.get(f'https://www.cqooc.com/json/test/result/search?testID={id}&ts={getTs()}', headers={
+                'Referer': f'https://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=488839&cid=197038&mid={self.mid}'
             }).json()
 
-            if isAnswer['data'] != []:
-                print(f"[{index+1}/{len(papersInfo)}] 已作答，跳过！ {papersInfo[id]}")
+            if isAnswer['data']:
+                print(f"[{index + 1}/{len(papersInfo)}] 已作答，跳过！ {papersInfo[id]}")
                 # print("{}/{} [{}] 已作答，跳过！".format(len(papersInfo), index + 1, papersInfo[id]))
                 time.sleep(1)
                 continue
 
-            response = self.post('http://www.cqooc.com/test/api/result/add', headers={
-                'Referer': f'http://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=307978&cid=131676&mid={self.mid}',
+            response = self.post('https://www.cqooc.com/test/api/result/add', headers={
+                'Referer': f'https://www.cqooc.com/learn/mooc/testing/do?tid={id}&id={self.courseId}&sid=307978&cid=131676&mid={self.mid}',
             }, data=json.dumps({
                 "ownerId": info.get('id'),
                 "username": info.get('username'),
@@ -349,17 +355,17 @@ class AutoCompletPapers():
             }))
 
             if response.json().get('code') == 100:
-                print(f"[{index+1}/{len(papersInfo)}] 已超过提交最大次数！ {papersInfo[id]}")
+                print(f"[{index + 1}/{len(papersInfo)}] 已超过提交最大次数！ {papersInfo[id]}")
                 # print("{}/{} [{}] 已超过提交最大次数！".format(len(papersInfo), index + 1, papersInfo[id]))
             else:
-                print(f"[{index+1}/{len(papersInfo)}] 得分: {response.json().get('score')} {papersInfo.get('id') }")
+                print(f"[{index + 1}/{len(papersInfo)}] 得分: {response.json().get('score')} {papersInfo.get('id')}")
                 # print("{}/{} [{}] 得分: {}".format(len(papersInfo), index + 1, papersInfo[id], response.json().get('score')))
 
             time.sleep(1)
 
+
 class AutoCompleteOnlineCourse:
     def __init__(self) -> None:
-
         if cookie_xsid == '':
             input("请添加xsid")
             exit(0)
@@ -367,18 +373,23 @@ class AutoCompleteOnlineCourse:
         session = requests.Session()
         session.headers['Cookie'] = 'player=1; xsid=' + cookie_xsid
         # session.headers['Connection'] = 'close'
-        session.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
+        session.headers[
+            'User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36'
         session.headers['Host'] = 'www.cqooc.com'
         session.keep_alive = False
         self.Session = session
         self.CompleteCourse = None
         self.courseId = None
         self.courseDes = None
+        self.username = None
+        self.ownerId = None
+        self.title = None
+        self.parentId = None
 
     @staticmethod
     def sleep_print(sec):
         for i in range(sec):
-            print(f"\r等待 {sec-i} 秒后继续", end='')
+            print(f"\r等待 {sec - i} 秒后继续", end='')
             time.sleep(1)
 
     def get(self, url, headers=None):
@@ -389,10 +400,10 @@ class AutoCompleteOnlineCourse:
                 print("\r请求异常，重试中...")
                 continue
 
-    def post(self, url, json=None, headers=None):
+    def post(self, url, post_json=None, headers=None):
         while True:
             try:
-                return self.Session.post(url, json=json, headers=headers)
+                return self.Session.post(url, json=post_json, headers=headers)
             except:
                 print("\r请求异常，重试中...")
                 continue
@@ -417,14 +428,15 @@ class AutoCompleteOnlineCourse:
             })
         while True:
             try:
-                id = input('请选择课程（序号）:')
-                self.title = courseData[int(id) - 1]['title']
+                select_id = input('请选择课程（序号）:')
+                self.title = courseData[int(select_id) - 1]['title']
                 break
             except:
+                select_id = None
                 print("输入有误，请重新输入！")
                 continue
-        self.parentId = courseData[int(id) - 1]['parentId']
-        self.courseId = courseData[int(id) - 1]['courseId']
+        self.parentId = courseData[int(select_id) - 1]['parentId']
+        self.courseId = courseData[int(select_id) - 1]['courseId']
         print("\n已选择 {}".format(self.title))
 
         while True:
@@ -443,7 +455,7 @@ class AutoCompleteOnlineCourse:
                 print("\n1、从过期题目中导出\n2、从已作答的题目中导出\n")
                 n = input("请选择模式（序号）: ")
                 papersList = self.get(
-                    f'http://www.cqooc.com/json/exam/papers?limit=200&start=1&courseId={self.courseId}&select=id,title&ts={getTs()}')
+                    f'https://www.cqooc.com/json/exam/papers?limit=200&start=1&courseId={self.courseId}&select=id,title&ts={getTs()}')
 
                 papersIds = {}
                 for i in papersList.json()['data']:
@@ -462,9 +474,10 @@ class AutoCompleteOnlineCourse:
 
     def getCourseDes(self):
         # 课程章节名
-        self.Session.headers['Referer'] = f'http://www.cqooc.com/my/learn/mooc/structure?id={self.courseId}'
+        self.Session.headers['Referer'] = f'https://www.cqooc.com/my/learn/mooc/structure?id={self.courseId}'
         courseDes = {}
-        res = self.get(f'http://www.cqooc.com/json/chapters?limit=200&start=1&sortby=selfId&status=1&courseId={self.courseId}&select=id,title,level,selfId,parentId&ts={getTs()}')
+        res = self.get(
+            f'https://www.cqooc.com/json/chapters?limit=200&start=1&sortby=selfId&status=1&courseId={self.courseId}&select=id,title,level,selfId,parentId&ts={getTs()}')
         for i in res.json()['data']:
             courseDes[i['id']] = i['title']
         self.courseDes = courseDes
@@ -474,16 +487,16 @@ class AutoCompleteOnlineCourse:
         获取基本信息
         :return:
         """
-        return self.get('http://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
+        return self.get('https://www.cqooc.com/user/session?xsid=' + cookie_xsid).json()
 
     def getCourseInfo(self) -> json:
         """
         获取课程信息
         :return:
         """
-        self.Session.headers['Referer'] = 'http://www.cqooc.com/my/learn'
+        self.Session.headers['Referer'] = 'https://www.cqooc.com/my/learn'
         return self.get(
-            'http://www.cqooc.com/json/mcs?sortby=id&reverse=true&del=2&courseType=2&ownerId={}&limit=30'.format(
+            'https://www.cqooc.com/json/mcs?sortby=id&reverse=true&del=2&courseType=2&ownerId={}&limit=30'.format(
                 self.ownerId)).json()
 
     def getCompleteCourse(self) -> list:
@@ -499,10 +512,11 @@ class AutoCompleteOnlineCourse:
         while True:
             maximumCycles -= 1
 
-            self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/progress?id=' + self.courseId
+            self.Session.headers['Referer'] = 'https://www.cqooc.com/learn/mooc/progress?id=' + self.courseId
             data = self.get(
-                f'http://www.cqooc.com/json/learnLogs?limit={limit}&start={start}&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}', headers={
-                    "referer": f'http://www.cqooc.com/learn/mooc/structure?id={self.courseId}'
+                f'https://www.cqooc.com/json/learnLogs?limit={limit}&start={start}&courseId={self.courseId}&select=sectionId&username={self.username}&ts={getTs()}',
+                headers={
+                    "referer": f'https://www.cqooc.com/learn/mooc/structure?id={self.courseId}'
                 })
 
             learnLogs = data.json()['meta']
@@ -520,20 +534,20 @@ class AutoCompleteOnlineCourse:
                 return CourseIdList
 
     def startLearn(self) -> json:
-        self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/structure?id=' + self.courseId
-        return self.post(url='http://www.cqooc.com/account/session/api/login/time', json={
+        self.Session.headers['Referer'] = 'https://www.cqooc.com/learn/mooc/structure?id=' + self.courseId
+        return self.post(url='https://www.cqooc.com/account/session/api/login/time', post_json={
             "username": self.username
         }).json()
 
     def getLog(self, sectionId) -> json:
-        self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/structure?id=' + self.courseId
+        self.Session.headers['Referer'] = 'https://www.cqooc.com/learn/mooc/structure?id=' + self.courseId
         return self.get(
-            'http://www.cqooc.com/json/learnLogs?sectionId=' + sectionId + '&username=' + self.username).json()
+            'https://www.cqooc.com/json/learnLogs?sectionId=' + sectionId + '&username=' + self.username).json()
 
     def checkProgress(self, courseId, sectionId, chapterId) -> None:
         count = 0
         while True:
-            self.Session.headers['Referer'] = 'http://www.cqooc.com/learn/mooc/structure?id=' + courseId
+            self.Session.headers['Referer'] = 'https://www.cqooc.com/learn/mooc/structure?id=' + courseId
 
             self.startLearn()
             self.getLog(sectionId)
@@ -541,7 +555,7 @@ class AutoCompleteOnlineCourse:
             self.startLearn()
             time.sleep(1)
 
-            Log = self.post('http://www.cqooc.com/learnLog/api/add', json={
+            Log = self.post('https://www.cqooc.com/learnLog/api/add', post_json={
                 "action": 0,
                 "category": 2,
                 "chapterId": str(chapterId),
@@ -570,15 +584,16 @@ class AutoCompleteOnlineCourse:
     def startLearnCourse(self):
 
         sectionList = \
-            self.get('http://www.cqooc.com/json/chapter/lessons?courseId=' + self.courseId).json()['data'][0]['body']
+            self.get('https://www.cqooc.com/json/chapter/lessons?courseId=' + self.courseId).json()['data'][0]['body']
         index_t = 0
         # CompleteCourse = self.getCompleteCourse()
         print("已完成小节数: {} ".format(len(self.CompleteCourse)))
 
         for chapterId, sectionIds in sectionList.items():
             print('\r章节进度: {}/{}({:.2f}%) \t当前: {}'.format(index_t + 1, len(sectionList.items()),
-                                                        ((float((index_t + 1) / len(sectionList.items()))) * 100),
-                                                        self.courseDes.get(chapterId)))
+                                                                 ((float(
+                                                                     (index_t + 1) / len(sectionList.items()))) * 100),
+                                                                 self.courseDes.get(chapterId)))
             index_t += 1
             for index, sectionId in enumerate(sectionIds):
                 print('\r\t小节进度: %d/%d(%.2f%%)' % (
@@ -589,7 +604,6 @@ class AutoCompleteOnlineCourse:
                 print('\t成功!')
                 self.checkProgress(self.courseId, sectionId, chapterId)
 
+
 if __name__ == '__main__':
     AutoCompleteOnlineCourse().main()
-
-
